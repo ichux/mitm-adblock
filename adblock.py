@@ -1,18 +1,19 @@
 """
 An mitmproxy adblock script!
-(Required python modules: re2 and adblockparser)
+(Required python3 modules: re and adblockparser)
 
 (c) 2015 epitron
+2018 ar0xa update for python3
 """
 
-import re2
-from mitmproxy.script import concurrent
-from mitmproxy.protocol.http import HTTPResponse
-from netlib.odict import ODictCaseless
-from adblockparser import AdblockRules
+import re
 from glob import glob
+from mitmproxy.script import concurrent
+from mitmproxy import http
+from mitmproxy import ctx
 
-
+sys.path.append('/usr/local/lib/python3.4/dist-packages/')
+from adblockparser import AdblockRules
 
 def combined(filenames):
   '''
@@ -26,135 +27,64 @@ def combined(filenames):
 
 
 def load_rules(blocklists=None):
-  rules = AdblockRules( 
-    combined(blocklists), 
-    use_re2=True, 
+  rules = AdblockRules(
+    combined(blocklists),
+#    use_re2=True,
     max_mem=512*1024*1024
-    # supported_options=['script', 'domain', 'image', 'stylesheet', 'object'] 
+    # supported_options=['script', 'domain', 'image', 'stylesheet', 'object']
   )
 
   return rules
 
-def start(context, argv):
-    '''
-    Called once on script startup, before any other events.
-    '''
-
+def load(l):
     global rules
-
     blocklists = glob("easylists/*")
-
     if len(blocklists) == 0:
-      context.log("Error, no blocklists found in 'easylists/'. Please run the 'update-blocklists' script.")
+      ctx.log("Error, no blocklists found in 'easylists/'. Please run the 'update-blocklists' script.")
       raise SystemExit
 
     else:
-      context.log("* Loading adblock rules...")
+      ctx.log("* Loading adblock rules...")
       for list in blocklists:
-        context.log("  |_ %s" % list)
+        ctx.log("  |_ %s" % list)
 
     rules = load_rules(blocklists)
-    context.log("")
-    context.log("* Done! Proxy server is ready to go!")
+    ctx.log("")
+    ctx.log("* Done! Proxy server is ready to go!")
 
+IMAGE_MATCHER      = re.compile(r"\.(png|jpe?g|gif)$")
+SCRIPT_MATCHER     = re.compile(r"\.(js)$")
+STYLESHEET_MATCHER = re.compile(r"\.(css)$")
 
-
-IMAGE_MATCHER      = re2.compile(r"\.(png|jpe?g|gif)$")
-SCRIPT_MATCHER     = re2.compile(r"\.(js)$")
-STYLESHEET_MATCHER = re2.compile(r"\.(css)$")
-
-@concurrent
-def request(context, flow):
+#entry point
+#@concurrent
+def request(flow):
     req = flow.request
-    # accept = flow.request.headers["Accept"]
-    # context.log("accept: %s" % flow.request.accept)
+    if req.host is not None:
+        # accept = flow.request.headers["Accept"]
+        # context.log("accept: %s" % flow.request.accept)
 
-    options = {'domain': req.host}
+        options = {'domain': req.host}
 
-    if IMAGE_MATCHER.search(req.path):
-        options["image"] = True
-    elif SCRIPT_MATCHER.search(req.path):
-        options["script"] = True
-    elif STYLESHEET_MATCHER.search(req.path):
-        options["stylesheet"] = True
+        if IMAGE_MATCHER.search(req.path):
+            options["image"] = True
+        elif SCRIPT_MATCHER.search(req.path):
+            options["script"] = True
+        elif STYLESHEET_MATCHER.search(req.path):
+            options["stylesheet"] = True
 
-    if rules.should_block(req.url, options):
-        context.log("vvvvvvvvvvvvvvvvvvvv BLOCKED vvvvvvvvvvvvvvvvvvvvvvvvvvv")
-        context.log("accept: %s" % flow.request.headers.get("Accept"))
-        context.log("blocked-url: %s" % flow.request.url)
-        context.log("^^^^^^^^^^^^^^^^^^^^ BLOCKED ^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+        if rules.should_block(req.url, options):
+            #ctx.log.info("vvvvvvvvvvvvvvvvvvvv BLOCKED vvvvvvvvvvvvvvvvvvvvvvvvvvv")
+            #ctx.log.info("accept: %s" % req.headers.get("Accept"))
+            #ctx.log.info("blocked-host: %s" % req.url)
+            #ctx.log.info("^^^^^^^^^^^^^^^^^^^^ BLOCKED ^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
-        # resp = HTTPResponse((1,1), 404, "OK",
-        #     ODictCaseless([["Content-Type", "text/html"]]),
-        #     "A terrible ad has been removed!")
-    
-        # HTTPResponse(http_version, status_code, reason, headers, content, timestamp_start=None, timestamp_end=None)
-
-        # resp = HTTPResponse(
-        #     (1,1), 
-        #     200, 
-        #     "OK",
-        #     ODictCaseless(
-        #         [
-        #             ["Content-Type", "text/html"]
-        #         ]
-        #     ),
-        #     "BLOCKED."
-        # )
-
-        resp = HTTPResponse(
-            (1,1), 
-            200, 
-            "OK",
-            Headers(content_type="text/html"),
-            "BLOCKED."
-        )
-
-        flow.reply(resp)
-    else:
-        context.log("url: %s" % flow.request.url)
+            flow.response = http.HTTPResponse.make(
+                200,
+                b"Blocked",
+                {"Content-Type": "text/html"}
+            )
+        #else:
+        #    ctx.log.info("No blocked url: %s" % req.host)
 
 
-"""
-An HTTP request.
-
-Exposes the following attributes:
-
-    method: HTTP method
-
-    scheme: URL scheme (http/https)
-
-    host: Target hostname of the request. This is not neccessarily the
-    directy upstream server (which could be another proxy), but it's always
-    the target server we want to reach at the end. This attribute is either
-    inferred from the request itself (absolute-form, authority-form) or from
-    the connection metadata (e.g. the host in reverse proxy mode).
-
-    port: Destination port
-
-    path: Path portion of the URL (not present in authority-form)
-
-    httpversion: HTTP version tuple, e.g. (1,1)
-
-    headers: ODictCaseless object
-
-    content: Content of the request, None, or CONTENT_MISSING if there
-    is content associated, but not present. CONTENT_MISSING evaluates
-    to False to make checking for the presence of content natural.
-
-    form_in: The request form which mitmproxy has received. The following
-    values are possible:
-
-         - relative (GET /index.html, OPTIONS *) (covers origin form and
-           asterisk form)
-         - absolute (GET http://example.com:80/index.html)
-         - authority-form (CONNECT example.com:443)
-         Details: http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-25#section-5.3
-
-    form_out: The request form which mitmproxy will send out to the
-    destination
-
-    timestamp_start: Timestamp indicating when request transmission started
-
-    timestamp_end: Timestamp indicating when request transmission ended
-"""
