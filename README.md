@@ -5,12 +5,11 @@ An adblocker that runs as a proxy server! (And works on HTTPS connections.)
 Use this to block ads on your mobile device, or just monitor its traffic.
 
 ## Installation
-
  1. Install [mitmproxy](http://mitmproxy.org/)
- 2. Install required python modules:
+ 2. Install required python3 modules:
 
 ```
-$ pip install re2 adblockparser
+$ pip3 install re adblockparser
 ```
 
  3. Run `./update-blocklists` to download some blocklists
