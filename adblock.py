@@ -5,7 +5,7 @@ An mitmproxy adblock script!
 (c) 2015 epitron
 2018 ar0xa update for python3
 """
-
+import sys
 import re
 from glob import glob
 from mitmproxy.script import concurrent
