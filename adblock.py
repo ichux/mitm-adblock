@@ -57,7 +57,7 @@ SCRIPT_MATCHER     = re.compile(r"\.(js)$")
 STYLESHEET_MATCHER = re.compile(r"\.(css)$")
 
 #entry point
-#@concurrent
+@concurrent
 def request(flow):
     req = flow.request
     if req.host is not None:
