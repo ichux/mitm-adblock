@@ -2,7 +2,7 @@
 
 An adblocker that runs as a proxy server! (And works on HTTPS connections.)
 
-Use this to block ads on your mobile device, or just monitor its traffic.
+Use this to block ads on your mobile device, or just monitor its traffic.The main advantage of this versus DNS adblocking is that it blocks the items when the page is loaded, much like adblock or ublock origin do. This means that sites that load advertisements over the same domain (like youtube) that get through on DNS adblock get filtered here.
 
 ## Installation
  1. Install [mitmproxy](http://mitmproxy.org/) (tested with 4.0.4 binaries)
