@@ -5,7 +5,7 @@ An adblocker that runs as a proxy server! (And works on HTTPS connections.)
 Use this to block ads on your mobile device, or just monitor its traffic.
 
 ## Installation
- 1. Install [mitmproxy](http://mitmproxy.org/)
+ 1. Install [mitmproxy](http://mitmproxy.org/) (tested with 4.0.4 binaries)
  2. Install required python3 modules:
 
 ```
