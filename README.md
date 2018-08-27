@@ -9,7 +9,7 @@ Use this to block ads on your mobile device, or just monitor its traffic.The mai
  2. Install required python3 modules:
 
 ```
-$ pip3 install re adblockparser
+$ pip3 install adblockparser
 ```
 Important: depending on your python version, edit `adblock.py` sys.path.append to reflect the correct python3 path.
  
