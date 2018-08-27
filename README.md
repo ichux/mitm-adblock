@@ -21,3 +21,21 @@ Important: depending on your python version, edit `adblock.py` sys.path.append t
 
 
 If you'd like to change any of the mitmproxy settings (like port, and where/whether it logs your connections), edit the `go` script.
+
+## How to run in transparant mode
+First, you need a linux machine and enable ip forwardig and prevent icmp redirects
+```
+sysctl -w net.ipv4.ip_forward=1
+sysctl -w net.ipv4.conf.all.send_redirects=0
+```
+
+Secondly you need to enable port redirecting from iptables
+```
+iptables -t nat -I PREROUTING -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 8118
+iptables -t nat -I PREROUTING -p tcp -m tcp --dport 443 -j REDIRECT --to-ports 8118
+```
+
+Lastly, you need to modify the run command
+```
+./mitmdump -p 8118 -s adblock.py --mode transparent --showhost --set stream_large_bodies=100k
+```
