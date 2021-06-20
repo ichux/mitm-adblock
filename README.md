@@ -24,6 +24,7 @@ If you'd like to change any of the mitmproxy settings (like port, and where/whet
 
 ## How to run in transparant mode
 First, you need a linux machine and enable ip forwardig and prevent icmp redirects
+See more information [at](https://docs.mitmproxy.org/stable/concepts-modes/)
 ```
 sysctl -w net.ipv4.ip_forward=1
 sysctl -w net.ipv4.conf.all.send_redirects=0
